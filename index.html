@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Audio Enhancer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6200ea;
+            --primary-light: #9d46ff;
+            --primary-dark: #0a00b6;
+            --secondary: #03dac6;
+            --background: #121212;
+            --surface: #1e1e1e;
+            --on-background: #e1e1e1;
+            --on-surface: #a7a7a7;
+            --error: #cf6679;
+            --success: #00c853;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--on-background);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, var(--primary-light), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            color: var(--on-surface);
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h2 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--primary-light);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--secondary);
+            background-color: rgba(157, 70, 255, 0.05);
+        }
+        
+        .upload-area i {
+            font-size: 48px;
+            color: var(--primary-light);
+            margin-bottom: 15px;
+        }
+        
+        .upload-area p {
+            margin-bottom: 10px;
+        }
+        
+        .upload-area .file-types {
+            font-size: 0.9rem;
+            color: var(--on-surface);
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-light);
+            box-shadow: 0 5px 15px rgba(157, 70, 255, 0.4);
+        }
+        
+        .btn:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .processing-options {
+            margin-top: 20px;
+        }
+        
+        .option-group {
+            margin-bottom: 15px;
+        }
+        
+        .option-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .option-group select, 
+        .option-group input[type="range"] {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background-color: #2d2d2d;
+            color: var(--on-background);
+        }
+        
+        .option-group input[type="range"] {
+            padding: 0;
+        }
+        
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: var(--on-surface);
+        }
+        
+        .file-info {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .file-info .file-details {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .file-info .file-icon {
+            font-size: 24px;
+            color: var(--primary-light);
+        }
+        
+        .progress-container {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background-color: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            width: 0;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-status {
+            font-size: 0.9rem;
+            color: var(--on-surface);
+            text-align: center;
+        }
+        
+        .result-container {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .result-card {
+            background-color: rgba(3, 218, 198, 0.1);
+            border: 1px solid var(--secondary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .result-card h3 {
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        .audio-player {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .download-btn {
+            background-color: var(--secondary);
+            color: var(--background);
+        }
+        
+        .download-btn:hover {
+            background-color: #04f7df;
+            box-shadow: 0 5px 15px rgba(3, 218, 198, 0.4);
+        }
+        
+        .analytics-container {
+            margin-top: 20px;
+        }
+        
+        .analytics-item {
+            margin-bottom: 15px;
+        }
+        
+        .analytics-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .analytics-bar {
+            height: 8px;
+            background-color: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .analytics-fill {
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary-light), var(--secondary));
+        }
+        
+        .help-section {
+            margin-top: 40px;
+        }
+        
+        .faq-item {
+            margin-bottom: 20px;
+        }
+        
+        .faq-question {
+            font-weight: 600;
+            color: var(--primary-light);
+            margin-bottom: 8px;
+        }
+        
+        .faq-answer {
+            color: var(--on-surface);
+        }
+        
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            padding: 20px;
+            color: var(--on-surface);
+            font-size: 0.9rem;
+        }
+        
+        .error-message {
+            color: var(--error);
+            background-color: rgba(207, 102, 121, 0.1);
+            border-left: 3px solid var(--error);
+            padding: 10px 15px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .success-message {
+            color: var(--success);
+            background-color: rgba(0, 200, 83, 0.1);
+            border-left: 3px solid var(--success);
+            padding: 10px 15px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        @media (min-width: 768px) {
+            .app-container {
+                flex-direction: row;
+            }
+            
+            .app-container > div {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Audio Enhancer</h1>
+            <p class="tagline">Transform your music with AI-powered drum and bass accompaniment</p>
+        </header>
+        
+        <main>
+            <div class="app-container">
+                <div class="card">
+                    <h2><i class="fas fa-upload"></i> Upload & Process</h2>
+                    
+                    <div id="upload-area" class="upload-area">
+                        <i class="fas fa-music"></i>
+                        <p>Drag and drop your audio file here</p>
+                        <p>or</p>
+                        <button id="browse-btn" class="btn"><i class="fas fa-folder-open"></i> Browse Files</button>
+                        <input type="file" id="file-input" accept=".mp3,.wav">
+                        <p class="file-types">Supported formats: MP3, WAV</p>
+                    </div>
+                    
+                    <div id="file-info" class="file-info">
+                        <div class="file-details">
+                            <i class="fas fa-file-audio file-icon"></i>
+                            <div>
+                                <div id="file-name">filename.mp3</div>
+                                <div id="file-size" style="font-size: 0.8rem; color: var(--on-surface);">0 MB</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="processing-options">
+                        <h3 style="margin-bottom: 15px;">Processing Options</h3>
+                        
+                        <div class="option-group">
+                            <label for="drum-style">Drum Style</label>
+                            <select id="drum-style">
+                                <option value="acoustic">Acoustic</option>
+                                <option value="electronic">Electronic</option>
+                                <option value="trap">Trap</option>
+                                <option value="jazz">Jazz</option>
+                                <option value="rock">Rock</option>
+                            </select>
+                        </div>
+                        
+                        <div class="option-group">
+                            <label for="bass-style">Bass Style</label>
+                            <select id="bass-style">
+                                <option value="fingered">Fingered</option>
+                                <option value="synth">Synth</option>
+                                <option value="dubstep">Dubstep</option>
+                                <option value="fretless">Fretless</option>
+                                <option value="upright">Upright</option>
+                            </select>
+                        </div>
+                        
+                        <div class="option-group">
+                            <label for="drum-intensity">Drum Intensity</label>
+                            <input type="range" id="drum-intensity" min="0" max="100" value="50">
+                            <div class="range-labels">
+                                <span>Subtle</span>
+                                <span>Balanced</span>
+                                <span>Dominant</span>
+                            </div>
+                        </div>
+                        
+                        <div class="option-group">
+                            <label for="bass-intensity">Bass Intensity</label>
+                            <input type="range" id="bass-intensity" min="0" max="100" value="50">
+                            <div class="range-labels">
+                                <span>Subtle</span>
+                                <span>Balanced</span>
+                                <span>Dominant</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="error-message" class="error-message">
+                        Error message goes here
+                    </div>
+                    
+                    <div id="success-message" class="success-message">
+                        Success message goes here
+                    </div>
+                    
+                    <button id="process-btn" class="btn" disabled><i class="fas fa-magic"></i> Process Audio</button>
+                    
+                    <div id="progress-container" class="progress-container">
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                        <p id="progress-status" class="progress-status">Processing... (0%)</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2><i class="fas fa-headphones"></i> Results & Analysis</h2>
+                    
+                    <div id="result-container" class="result-container">
+                        <div class="result-card">
+                            <h3>Enhanced Audio</h3>
+                            <audio id="result-audio" class="audio-player" controls>
+                                Your browser does not support the audio element.
+                            </audio>
+                            <button id="download-btn" class="btn download-btn"><i class="fas fa-download"></i> Download Enhanced Track</button>
+                        </div>
+                        
+                        <div class="analytics-container">
+                            <h3 style="margin-bottom: 15px;">Audio Analysis</h3>
+                            
+                            <div class="analytics-item">
+                                <div class="analytics-label">
+                                    <span>Tempo Detection</span>
+                                    <span id="tempo-value">120 BPM</span>
+                                </div>
+                                <div class="analytics-bar">
+                                    <div id="tempo-bar" class="analytics-fill" style="width: 75%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-item">
+                                <div class="analytics-label">
+                                    <span>Key Detection</span>
+                                    <span id="key-value">C Major</span>
+                                </div>
+                                <div class="analytics-bar">
+                                    <div id="key-bar" class="analytics-fill" style="width: 90%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-item">
+                                <div class="analytics-label">
+                                    <span>Harmonic Compatibility</span>
+                                    <span id="harmony-value">92%</span>
+                                </div>
+                                <div class="analytics-bar">
+                                    <div id="harmony-bar" class="analytics-fill" style="width: 92%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-item">
+                                <div class="analytics-label">
+                                    <span>Rhythmic Alignment</span>
+                                    <span id="rhythm-value">85%</span>
+                                </div>
+                                <div class="analytics-bar">
+                                    <div id="rhythm-bar" class="analytics-fill" style="width: 85%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3 style="margin-bottom: 20px;">FAQ</h3>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">What file formats are supported?</div>
+                            <div class="faq-answer">Currently, we support MP3 and WAV audio files. For best results, we recommend using high-quality audio files.</div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">How long does processing take?</div>
+                            <div class="faq-answer">Processing time depends on the length of your audio file and server load. Most tracks (3-5 minutes) are processed within 30-60 seconds.</div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">How does the AI analyze my music?</div>
+                            <div class="faq-answer">Our AI analyzes your audio to detect tempo, key, chord progressions, and musical structure. It then generates complementary drum and bass tracks that match the style and feel of your music.</div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">Is my music stored on your servers?</div>
+                            <div class="faq-answer">Your original and enhanced audio files are stored temporarily for processing and made available for download. Files are automatically deleted after 24 hours.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 AI Audio Enhancer. All rights reserved.</p>
+        </footer>
+    </div>
+    
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM Elements
+        const uploadArea = document.getElementById('upload-area');
+        const browseBtn = document.getElementById('browse-btn');
+        const fileInput = document.getElementById('file-input');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const fileSize = document.getElementById('file-size');
+        const processBtn = document.getElementById('process-btn');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressStatus = document.getElementById('progress-status');
+        const resultContainer = document.getElementById('result-container');
+        const resultAudio = document.getElementById('result-audio');
+        const downloadBtn = document.getElementById('download-btn');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        
+        // Force GitHub Pages redeploy
+        // Variables
+        let selectedFile = null;
+        const API_ENDPOINT = 'https://audio-enhancer-backend.onrender.com/api/process';
+        
+        // Event Listeners
+        browseBtn.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--secondary)';
+            uploadArea.style.backgroundColor = 'rgba(157, 70, 255, 0.05)';
+        });
+        
+        uploadArea.addEventListener('dragleave', function() {
+            uploadArea.style.borderColor = 'var(--primary-light)';
+            uploadArea.style.backgroundColor = 'transparent';
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary-light)';
+            uploadArea.style.backgroundColor = 'transparent';
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length) {
+                handleFile(fileInput.files[0]);
+            }
+        });
+        
+        processBtn.addEventListener('click', processAudio);
+        
+        downloadBtn.addEventListener('click', function() {
+            const a = document.createElement('a');
+            a.href = resultAudio.src;
+            a.download = 'enhanced_' + selectedFile.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showSuccessMessage('Your enhanced audio has been downloaded successfully!');
+        });
+        
+        // Functions
+        function handleFile(file) {
+            if (!file.type.match('audio/mp3') && !file.type.match('audio/wav')) {
+                showErrorMessage('Please upload an MP3 or WAV file');
+                return;
+            }
+            if (file.size > 50 * 1024 * 1024) {
+                showErrorMessage('File size exceeds the 50MB limit');
+                return;
+            }
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            processBtn.disabled = false;
+            hideErrorMessage();
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            else return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+        
+        function processAudio() {
+            if (!selectedFile) return;
+            
+            const drumStyle = document.getElementById('drum-style').value;
+            const bassStyle = document.getElementById('bass-style').value;
+            const drumIntensity = document.getElementById('drum-intensity').value;
+            const bassIntensity = document.getElementById('bass-intensity').value;
+            
+            progressContainer.style.display = 'block';
+            processBtn.disabled = true;
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('drumStyle', drumStyle);
+            formData.append('bassStyle', bassStyle);
+            formData.append('drumIntensity', drumIntensity);
+            formData.append('bassIntensity', bassIntensity);
+            
+            uploadFile(formData);
+        }
+        
+        function uploadFile(formData) {
+            updateProgress(5);
+            progressStatus.textContent = 'Uploading file...';
+            
+            fetch(API_ENDPOINT, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Error processing audio');
+                    });
+                }
+                return response.blob(); // Expecting audio file back
+            })
+            .then(blob => {
+                updateProgress(100);
+                progressStatus.textContent = 'Processing complete!';
+                const url = URL.createObjectURL(blob);
+                resultAudio.src = url;
+                resultContainer.style.display = 'block';
+                showSuccessMessage('Your audio has been successfully processed!');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showErrorMessage(error.message);
+                progressContainer.style.display = 'none';
+                processBtn.disabled = false;
+            });
+        }
+        
+        function updateProgress(percentage) {
+            const roundedPercentage = Math.round(percentage);
+            progressFill.style.width = roundedPercentage + '%';
+            progressStatus.textContent = `Processing... (${roundedPercentage}%)`;
+        }
+        
+        function showErrorMessage(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+        
+        function hideErrorMessage() {
+            errorMessage.style.display = 'none';
+        }
+        
+        function showSuccessMessage(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 5000);
+        }
+        
+        function initialize() {
+            processBtn.disabled = true;
+            fileInfo.style.display = 'none';
+            progressContainer.style.display = 'none';
+            resultContainer.style.display = 'none';
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+        
+        initialize();
+    });
+</script>
+</body>
+</html>

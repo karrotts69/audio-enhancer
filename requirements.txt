@@ -1,0 +1,6 @@
+flask
+flask-cors
+pydub
+gunicorn
+librosa
+numpy
