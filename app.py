@@ -10,18 +10,15 @@ import subprocess
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "https://karrotts69.github.io"}})
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
-logger = logging.getLogger()
-handler = logging.StreamHandler()
-handler.setLevel(logging.DEBUG)
-logger.addHandler(handler)
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 def check_ffmpeg():
     try:
         subprocess.run(['ffmpeg', '-version'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         logger.info("FFmpeg is available")
     except Exception as e:
-        logger.error(f"FFmpeg check failed: {str(e)}")
+        logger.error(f"FFmpeg check failed: {e}")
 
 @app.route('/api/process', methods=['POST'])
 def process_audio():
@@ -39,25 +36,23 @@ def process_audio():
         bass_intensity = float(request.form.get('bassIntensity', '50')) / 100
 
         if not file.filename.endswith(('.mp3', '.wav')):
-            logger.error("Invalid file type: %s", file.filename)
+            logger.error(f"Invalid file type: {file.filename}")
             return jsonify({"error": "Only MP3 and WAV supported"}), 400
 
         input_path = f"temp_{file.filename}"
         logger.info(f"Saving file to {input_path}")
         file.save(input_path)
 
-        logger.info("Loading audio with librosa")
+        logger.info("Loading audio")
         try:
             y, sr = librosa.load(input_path, sr=None)
         except Exception as e:
-            logger.error(f"Librosa load failed: {str(e)}")
-            # Fallback: Use pydub to convert to WAV first
+            logger.warning(f"Librosa failed: {e}. Falling back to pydub")
             audio = AudioSegment.from_file(input_path)
-            wav_path = input_path.replace('.mp3', '.wav') if file.filename.endswith('.mp3') else input_path
-            audio.export(wav_path, format='wav')
+            wav_path = "temp.wav"
+            audio.export(wav_path, format="wav")
             y, sr = librosa.load(wav_path, sr=None)
-            if wav_path != input_path:
-                os.remove(wav_path)
+            os.remove(wav_path)
 
         logger.info("Processing audio")
         t = np.linspace(0, len(y) / sr, len(y))
@@ -68,7 +63,7 @@ def process_audio():
         processed_y = y + bass + drums
 
         output_path = f"processed_{file.filename}"
-        temp_wav_path = output_path if file.filename.endswith('.wav') else output_path.replace('.mp3', '.wav')
+        temp_wav_path = output_path if file.filename.endswith('.wav') else "temp_processed.wav"
         logger.info(f"Writing WAV to {temp_wav_path}")
         sf.write(temp_wav_path, processed_y, sr)
 
@@ -92,7 +87,7 @@ def process_audio():
         return response
 
     except Exception as e:
-        logger.error(f"Error: {str(e)}", exc_info=True)
+        logger.error(f"Error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/health', methods=['GET'])
