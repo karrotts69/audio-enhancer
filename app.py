@@ -59,7 +59,7 @@ def process_audio():
         os.remove(input_path)
         logging.info(f"Sending file: {output_path}")
         response = send_file(output_path, mimetype=mime_type)
-        os.remove(output_path)  # Cleanup after sending
+        os.remove(output_path)
         return response
 
     except Exception as e:
