@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, make_response
 from flask_cors import CORS
 import os
 import librosa
@@ -19,15 +19,19 @@ logger.addHandler(handler)
 def process_audio():
     try:
         logger.info("Processing started")
+        if 'file' not in request.files:
+            logger.error("No file part in request")
+            return jsonify({"error": "No file uploaded"}), 400
+
         file = request.files['file']
-        drum_style = request.form['drumStyle']
-        bass_style = request.form['bassStyle']
-        drum_intensity = float(request.form['drumIntensity']) / 100
-        bass_intensity = float(request.form['bassIntensity']) / 100
+        drum_style = request.form.get('drumStyle', 'rock')
+        bass_style = request.form.get('bassStyle', 'fingered')
+        drum_intensity = float(request.form.get('drumIntensity', '50')) / 100
+        bass_intensity = float(request.form.get('bassIntensity', '50')) / 100
 
         if not file.filename.endswith(('.mp3', '.wav')):
-            logger.error("Invalid file type")
-            return jsonify({"error": "Only MP3 and WAV files supported"}), 400
+            logger.error("Invalid file type: %s", file.filename)
+            return jsonify({"error": "Only MP3 and WAV supported"}), 400
 
         input_path = f"temp_{file.filename}"
         logger.info(f"Saving file to {input_path}")
@@ -36,6 +40,7 @@ def process_audio():
         logger.info("Loading audio with librosa")
         y, sr = librosa.load(input_path, sr=None)
 
+        logger.info("Processing audio")
         t = np.linspace(0, len(y) / sr, len(y))
         bass_freq = 60 if bass_style == "fingered" else 40
         bass = bass_intensity * np.sin(2 * np.pi * bass_freq * t)
@@ -62,7 +67,8 @@ def process_audio():
 
         os.remove(input_path)
         logger.info(f"Sending file: {output_path}")
-        response = send_file(output_path, mimetype=mime_type)
+        response = make_response(send_file(output_path, mimetype=mime_type))
+        response.headers['Access-Control-Allow-Origin'] = 'https://karrotts69.github.io'
         os.remove(output_path)
         return response
 
