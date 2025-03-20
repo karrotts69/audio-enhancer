@@ -6,6 +6,7 @@ import soundfile as sf
 import numpy as np
 from pydub import AudioSegment
 import logging
+import subprocess
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "https://karrotts69.github.io"}})
@@ -15,10 +16,18 @@ handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
+def check_ffmpeg():
+    try:
+        subprocess.run(['ffmpeg', '-version'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logger.info("FFmpeg is available")
+    except Exception as e:
+        logger.error(f"FFmpeg check failed: {str(e)}")
+
 @app.route('/api/process', methods=['POST'])
 def process_audio():
     try:
         logger.info("Processing started")
+        check_ffmpeg()
         if 'file' not in request.files:
             logger.error("No file part in request")
             return jsonify({"error": "No file uploaded"}), 400
@@ -38,7 +47,17 @@ def process_audio():
         file.save(input_path)
 
         logger.info("Loading audio with librosa")
-        y, sr = librosa.load(input_path, sr=None)
+        try:
+            y, sr = librosa.load(input_path, sr=None)
+        except Exception as e:
+            logger.error(f"Librosa load failed: {str(e)}")
+            # Fallback: Use pydub to convert to WAV first
+            audio = AudioSegment.from_file(input_path)
+            wav_path = input_path.replace('.mp3', '.wav') if file.filename.endswith('.mp3') else input_path
+            audio.export(wav_path, format='wav')
+            y, sr = librosa.load(wav_path, sr=None)
+            if wav_path != input_path:
+                os.remove(wav_path)
 
         logger.info("Processing audio")
         t = np.linspace(0, len(y) / sr, len(y))
