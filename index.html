@@ -598,21 +598,17 @@
         
         // Functions
         function handleFile(file) {
-            if (!file.type.match('audio/mp3') && !file.type.match('audio/wav')) {
-                showErrorMessage('Please upload an MP3 or WAV file');
-                return;
-            }
-            if (file.size > 50 * 1024 * 1024) {
-                showErrorMessage('File size exceeds the 50MB limit');
-                return;
-            }
-            selectedFile = file;
-            fileName.textContent = file.name;
-            fileSize.textContent = formatFileSize(file.size);
-            fileInfo.style.display = 'block';
-            processBtn.disabled = false;
-            hideErrorMessage();
-        }
+    if (!file.name.match(/\.(mp3|wav)$/i)) {
+        showErrorMessage('Please upload an MP3 or WAV file');
+        return;
+    }
+    selectedFile = file;
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    fileInfo.style.display = 'block';
+    processBtn.disabled = false;
+    hideErrorMessage();
+}
         
         function formatFileSize(bytes) {
             if (bytes < 1024) return bytes + ' bytes';
