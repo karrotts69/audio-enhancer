@@ -58,16 +58,13 @@ def process_audio():
 
         os.remove(input_path)
         logging.info(f"Sending file: {output_path}")
-        return send_file(output_path, mimetype=mime_type)
+        response = send_file(output_path, mimetype=mime_type)
+        os.remove(output_path)  # Cleanup after sending
+        return response
 
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-    finally:
-        for path in [input_path, output_path]:
-            if os.path.exists(path):
-                os.remove(path)
 
 @app.route('/api/health', methods=['GET'])
 def health():
